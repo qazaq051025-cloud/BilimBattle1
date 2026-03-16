@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BilimBattle — Оқу Шайқасы</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/animations.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+</head>
+<body>
+<canvas id="bgCanvas"></canvas>
+
+<!-- SPLASH -->
+<div id="screen-splash" class="screen active">
+  <div class="splash-container">
+    <div class="logo-wrap">
+      <div class="logo-icon">⚡</div>
+      <h1 class="logo-text">Bilim<span>Battle</span></h1>
+      <p class="logo-tagline">Оқу — шайқас, білім — қару!</p>
+    </div>
+    <div class="auth-tabs">
+      <button class="tab-btn active" onclick="switchTab('login')">Кіру</button>
+      <button class="tab-btn" onclick="switchTab('register')">Тіркелу</button>
+    </div>
+    <div id="tab-login" class="auth-form">
+      <input type="text" id="login-user" placeholder="Логин / Никнейм" class="input-field" />
+      <input type="password" id="login-pass" placeholder="Пароль" class="input-field" />
+      <button class="btn-primary" onclick="doLogin()">⚡ Кіру</button>
+      <p class="auth-hint" id="login-error"></p>
+    </div>
+    <div id="tab-register" class="auth-form hidden">
+      <input type="text" id="reg-name" placeholder="Толық аты-жөні" class="input-field" />
+      <input type="text" id="reg-user" placeholder="Никнейм (уникальный)" class="input-field" />
+      <input type="text" id="reg-subject" placeholder="Пән (математика, тарих...)" class="input-field" />
+      <input type="password" id="reg-pass" placeholder="Пароль" class="input-field" />
+      <input type="password" id="reg-pass2" placeholder="Парольді қайталаңыз" class="input-field" />
+      <button class="btn-primary" onclick="doRegister()">🚀 Тіркелу</button>
+      <p class="auth-hint" id="reg-error"></p>
+    </div>
+    <div class="student-join-hint">
+      <p>Оқушысыз ба? <a href="#" onclick="showStudentJoin()">Кодпен тестке кіру →</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- STUDENT JOIN -->
+<div id="screen-student" class="screen">
+  <div class="student-container">
+    <button class="btn-back" onclick="showScreen('screen-splash')">← Артқа</button>
+    <div style="font-size:72px;margin-bottom:8px">🎮</div>
+    <h2>Тестке қосылу</h2>
+    <p style="color:var(--text2);margin-bottom:24px">Мұғалім берген 6 цифрлы кодты теріңіз</p>
+    <div class="code-input-wrap">
+      <input type="text" id="join-name" placeholder="Атыңызды жазыңыз" class="input-field" style="max-width:320px;text-align:center" />
+      <input type="text" id="join-code" placeholder="● ● ● ● ● ●" class="input-field big-input" maxlength="6"
+        oninput="this.value=this.value.replace(/\D/g,'')" />
+      <button class="btn-primary" onclick="studentJoinByCode()" style="max-width:320px">Кіру ⚡</button>
+    </div>
+  </div>
+</div>
+
+<!-- STUDENT QUIZ SCREEN -->
+<div id="screen-student-quiz" class="screen game-screen">
+  <div class="sq-header">
+    <div id="sq-progress-wrap" class="sq-progress-wrap">
+      <div id="sq-progress" class="sq-progress-bar" style="width:0%"></div>
+    </div>
+    <div class="sq-meta">
+      <span id="sq-q-num" style="font-family:var(--font-display);font-size:14px">1/15</span>
+      <span id="student-quiz-title" style="color:var(--text2);font-size:13px"></span>
+      <div class="sq-timer-wrap">
+        <span id="sq-timer-num" class="sq-timer-num">20</span>
+        <div class="sq-timer-track"><div id="sq-timer-bar" class="sq-timer-bar"></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="sq-body">
+    <div class="question-card sq-question-card">
+      <p id="sq-question-text">Сұрақ...</p>
+    </div>
+    <div id="sq-answers" class="sq-answers-grid"></div>
+    <div id="sq-feedback" class="sq-feedback hidden"></div>
+  </div>
+</div>
+
+<!-- STUDENT RESULT -->
+<div id="screen-student-result" class="screen">
+  <div class="sr-container">
+    <div id="sr-emoji" class="sr-emoji">🏆</div>
+    <h2 class="sr-name" id="sr-name">Аты</h2>
+    <div class="sr-grade-circle"><span id="sr-grade">5</span></div>
+    <div class="sr-stats">
+      <div class="sr-stat"><span class="sr-stat-val" id="sr-score">0</span><span>Ұпай</span></div>
+      <div class="sr-stat"><span class="sr-stat-val" id="sr-correct">0/0</span><span>Дұрыс</span></div>
+      <div class="sr-stat"><span class="sr-stat-val" id="sr-pct">0%</span><span>Пайыз</span></div>
+    </div>
+    <p style="color:var(--text2);font-size:14px;margin-top:8px">Нәтиже мұғалімге жіберілді ✅</p>
+    <button class="btn-outline" onclick="showScreen('screen-splash')" style="margin-top:24px;max-width:280px">← Басты бетке</button>
+  </div>
+</div>
+
+<!-- SOLO LOBBY (teacher leaderboard) -->
+<div id="screen-solo-lobby" class="screen">
+  <nav class="top-nav">
+    <div class="nav-logo">⚡ Жеке Жарыс</div>
+    <div class="nav-actions">
+      <button class="btn-primary small" onclick="endSoloRoom()">🏁 Аяқтау</button>
+    </div>
+  </nav>
+  <div class="solo-lobby-body">
+    <div class="solo-code-banner">
+      <p style="color:var(--text2);font-size:14px;margin-bottom:8px">Оқушыларға кодты айтыңыз:</p>
+      <div class="solo-big-code" id="solo-room-code">------</div>
+      <p style="color:var(--text2);font-size:13px;margin-top:8px">«Кодпен тестке кіру» → код теру → тест тапсыру</p>
+    </div>
+    <div class="solo-info-row">
+      <span id="solo-quiz-title" style="font-weight:700;font-size:16px"></span>
+      <span id="solo-q-count" style="color:var(--text2)"></span>
+      <span id="solo-participant-count" style="color:var(--success);font-weight:700">👥 0 оқушы</span>
+    </div>
+    <h3 style="text-align:center;margin-bottom:12px;font-family:var(--font-display)">🏆 Live Рейтинг</h3>
+    <div id="solo-leaderboard" class="solo-leaderboard"></div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="screen-dashboard" class="screen">
+  <nav class="top-nav">
+    <div class="nav-logo">⚡ BilimBattle</div>
+    <div class="nav-teacher" id="nav-teacher-name"></div>
+    <div class="nav-actions">
+      <button class="nav-btn" onclick="showScreen('screen-quizzes')">📚 Тесттерім</button>
+      <button class="nav-btn" onclick="openEditor(null)">✏️ Жаңа тест</button>
+      <button class="nav-btn" onclick="doLogout()">Шығу</button>
+    </div>
+  </nav>
+  <div class="dashboard-body">
+    <div class="dashboard-welcome">
+      <h2>Сәлем, <span id="dash-teacher-name">Мұғалім</span>! 👋</h2>
+      <p>Бүгін қандай режимде шайқасамыз?</p>
+    </div>
+    <div class="mode-type-row">
+      <div class="mode-type-badge team-badge">🏟️ ТОПТЫҚ — проекторда</div>
+      <div class="mode-type-badge solo-badge">📱 ЖЕКЕ — телефоннан</div>
+    </div>
+    <div class="mode-grid">
+      <div class="mode-card team-mode" onclick="pickMode('bamboozle')">
+        <div class="mode-icon">🃏</div>
+        <h3>BilimBattle</h3>
+        <p>Командалық карточка ойыны</p>
+        <div class="mode-tag team-tag">ТОПТЫҚ</div>
+      </div>
+      <div class="mode-card team-mode featured" onclick="pickMode('monster')">
+        <div class="mode-icon">👾</div>
+        <h3>Monster Raid</h3>
+        <p>Барлық топ Boss-қа қарсы!</p>
+        <div class="mode-badge">🔥 HOT</div>
+        <div class="mode-tag team-tag">ТОПТЫҚ</div>
+      </div>
+      <div class="mode-card solo-mode" onclick="pickMode('kahoot')">
+        <div class="mode-icon">⚡</div>
+        <h3>Жеке Жарыс</h3>
+        <p>Оқушы телефонынан тестке кіреді</p>
+        <div class="mode-tag solo-tag">ЖЕКЕ</div>
+      </div>
+      <div class="mode-card" onclick="openEditor(null)">
+        <div class="mode-icon">✏️</div>
+        <h3>Редактор</h3>
+        <p>Жаңа тест жасау / AI</p>
+      </div>
+    </div>
+    <div class="recent-quizzes">
+      <h3>📂 Соңғы тесттер</h3>
+      <div id="recent-list" class="quiz-list-mini"></div>
+    </div>
+  </div>
+</div>
+
+<!-- EDITOR -->
+<div id="screen-editor" class="screen">
+  <nav class="top-nav">
+    <div class="nav-logo">✏️ Редактор</div>
+    <div class="nav-actions">
+      <button class="nav-btn" onclick="showScreen('screen-dashboard')">← Дашборд</button>
+      <button class="btn-primary small" onclick="saveQuiz()">💾 Сақтау</button>
+    </div>
+  </nav>
+  <div class="editor-body">
+    <div class="editor-left">
+      <div class="editor-meta">
+        <input type="text" id="quiz-title" placeholder="Тест атауы" class="input-field" />
+        <input type="text" id="quiz-subject" placeholder="Пән" class="input-field" />
+        <select id="quiz-grade" class="input-field">
+          <option value="">Сынып</option>
+          <option>1-сынып</option><option>2-сынып</option><option>3-сынып</option>
+          <option>4-сынып</option><option>5-сынып</option><option>6-сынып</option>
+          <option>7-сынып</option><option>8-сынып</option><option>9-сынып</option>
+          <option>10-сынып</option><option>11-сынып</option><option>Университет</option>
+        </select>
+        <select id="quiz-lang" class="input-field">
+          <option value="kk">Қазақ тілі</option>
+          <option value="ru">Орыс тілі</option>
+          <option value="en">Ағылшын тілі</option>
+        </select>
+      </div>
+      <div class="ai-section">
+        <h4>🤖 AI Генератор</h4>
+        <textarea id="ai-topic" placeholder="Тақырыпты жазыңыз: мысалы «Квадрат түбір қасиеттері, 8-сынып»" class="input-field" rows="3"></textarea>
+        <div class="ai-options">
+          <select id="ai-count" class="input-field small-select">
+            <option value="10">10 сұрақ</option>
+            <option value="15" selected>15 сұрақ</option>
+            <option value="20">20 сұрақ</option>
+          </select>
+          <button class="btn-ai" onclick="generateWithAI()">⚡ Генерация</button>
+        </div>
+        <div id="ai-status"></div>
+      </div>
+      <div class="import-section">
+        <h4>📁 Импорт (.txt)</h4>
+        <div class="import-format-hint">
+          <code>Сұрақ мәтіні?<br>A) Жауап 1<br>B) Жауап 2<br>C) Жауап 3<br>D) Жауап 4<br>Дұрыс: A</code>
+        </div>
+        <input type="file" id="import-file" accept=".txt,.csv" class="hidden" onchange="importFromFile(event)" />
+        <button class="btn-outline" onclick="document.getElementById('import-file').click()">📤 Файл жүктеу</button>
+      </div>
+    </div>
+    <div class="editor-right">
+      <div class="questions-header">
+        <h4>📝 Сұрақтар <span id="q-count-badge" class="badge">0</span></h4>
+        <button class="btn-add-q" onclick="addQuestion()">+ Сұрақ қосу</button>
+      </div>
+      <div id="questions-list" class="questions-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MY QUIZZES -->
+<div id="screen-quizzes" class="screen">
+  <nav class="top-nav">
+    <div class="nav-logo">📚 Тесттерім</div>
+    <div class="nav-actions">
+      <button class="nav-btn" onclick="showScreen('screen-dashboard')">← Дашборд</button>
+      <button class="btn-primary small" onclick="openEditor(null)">+ Жаңа тест</button>
+    </div>
+  </nav>
+  <div class="quizzes-body">
+    <div id="quizzes-grid" class="quizzes-grid"></div>
+  </div>
+</div>
+
+<!-- GAME SETUP -->
+<div id="screen-setup" class="screen">
+  <nav class="top-nav">
+    <div class="nav-logo" id="setup-mode-title">⚙️ Баптау</div>
+    <div class="nav-actions">
+      <button class="nav-btn" onclick="showScreen('screen-dashboard')">← Артқа</button>
+    </div>
+  </nav>
+  <div class="setup-body">
+    <div class="setup-form">
+      <h3>Тест таңдаңыз</h3>
+      <div id="setup-quiz-list" class="setup-quiz-list"></div>
+      <div id="team-setup" class="team-setup">
+        <h3>Командалар</h3>
+        <div class="team-count-row">
+          <span>Топ саны:</span>
+          <div class="count-btns">
+            <button class="count-btn" onclick="setTeamCount(1)">1</button>
+            <button class="count-btn active" onclick="setTeamCount(2)">2</button>
+            <button class="count-btn" onclick="setTeamCount(3)">3</button>
+            <button class="count-btn" onclick="setTeamCount(4)">4</button>
+          </div>
+        </div>
+        <div id="team-names" class="team-names-grid"></div>
+      </div>
+      <div id="setup-solo-info" class="hidden">
+        <div class="solo-info-box">
+          <span style="font-size:36px">📱</span>
+          <div>
+            <strong>Жеке режим</strong>
+            <p style="color:var(--text2);font-size:13px;margin-top:4px">Ойын басталғанда оқушыларға кодты айтасыз. Олар телефоннан тестті тапсырады. Сіздің экранда тек live рейтинг шығады.</p>
+          </div>
+        </div>
+      </div>
+      <div class="timer-setup">
+        <h3>Таймер</h3>
+        <label class="toggle-wrap">
+          <input type="checkbox" id="timer-on" checked />
+          <span class="toggle-slider"></span>
+          <span>Таймер қосу</span>
+        </label>
+        <div id="timer-options" class="timer-options">
+          <button class="time-btn active" onclick="setTimer(15)">15с</button>
+          <button class="time-btn" onclick="setTimer(20)">20с</button>
+          <button class="time-btn" onclick="setTimer(30)">30с</button>
+          <button class="time-btn" onclick="setTimer(45)">45с</button>
+        </div>
+      </div>
+      <button class="btn-primary big" onclick="startGame()">🚀 Ойынды бастау!</button>
+    </div>
+    <div class="setup-qr-side" id="setup-qr-side" style="display:none">
+      <h3>📱 Оқушыларға код</h3>
+      <div class="room-code" id="room-code-display">------</div>
+      <p class="qr-hint" style="margin-top:12px">Бастамас бұрын кодты оқушыларға айтыңыз</p>
+    </div>
+  </div>
+</div>
+
+<!-- BAMBOOZLE GAME -->
+<div id="screen-game-bamboozle" class="screen game-screen">
+  <div class="game-header">
+    <div class="game-title-bar">
+      <span id="bb-q-num">Сұрақ 1/15</span>
+      <span id="bb-topic">Тақырып</span>
+      <div id="bb-timer-wrap" class="timer-circle"><span id="bb-timer">20</span></div>
+    </div>
+    <div id="bb-scores" class="scores-bar"></div>
+  </div>
+  <div class="game-question-area">
+    <div class="question-card">
+      <p id="bb-question-text">Сұрақ мәтіні</p>
+    </div>
+  </div>
+  <div id="bb-cards-area" class="cards-area"></div>
+  <div id="bb-result-popup" class="result-popup hidden"></div>
+</div>
+
+<!-- MONSTER RAID -->
+<div id="screen-game-monster" class="screen game-screen">
+  <div class="monster-header">
+    <div id="monster-scores" class="scores-bar"></div>
+    <div class="boss-info">
+      <span id="boss-name">🐉 Сан Айдаһары</span>
+      <div class="boss-hp-bar-wrap">
+        <div id="boss-hp-bar" class="boss-hp-bar" style="width:100%"></div>
+      </div>
+      <span id="boss-hp-text">500 / 500 HP</span>
+    </div>
+  </div>
+  <div class="monster-arena">
+    <div id="monster-sprite" class="monster-sprite">
+      <div id="monster-svg-wrap"></div>
+    </div>
+    <div class="monster-question-wrap">
+      <div class="question-card">
+        <p id="monster-q-num" class="q-num-small">1 / 15</p>
+        <p id="monster-question-text">Сұрақ...</p>
+      </div>
+      <div id="monster-answers" class="monster-answers-grid"></div>
+      <div id="monster-timer-wrap" class="timer-bar-wrap">
+        <div id="monster-timer-bar" class="timer-bar"></div>
+      </div>
+    </div>
+  </div>
+  <div id="monster-result-popup" class="result-popup hidden"></div>
+</div>
+
+<!-- RESULTS -->
+<div id="screen-results" class="screen">
+  <div class="results-container">
+    <h1 class="results-title">🏆 Ойын аяқталды!</h1>
+    <div id="podium" class="podium"></div>
+    <div id="all-scores" class="all-scores-table"></div>
+    <div class="results-actions">
+      <button class="btn-primary" onclick="showScreen('screen-dashboard')">🏠 Басты бет</button>
+      <button class="btn-outline" onclick="restartGame()">🔄 Қайта ойнау</button>
+    </div>
+  </div>
+  <canvas id="confetti-canvas"></canvas>
+</div>
+
+<!-- ADMIN -->
+<div id="screen-admin" class="screen">
+  <nav class="top-nav admin-nav">
+    <div class="nav-logo">🛡️ Admin Panel</div>
+    <div class="nav-actions">
+      <button class="nav-btn" onclick="doLogout()">Шығу</button>
+    </div>
+  </nav>
+  <div class="admin-body">
+    <h2>👩‍🏫 Мұғалімдер тізімі</h2>
+    <div id="admin-teachers-list" class="admin-table-wrap"></div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+<div id="mem-overlay" class="mem-overlay hidden"><div id="mem-content" class="mem-content"></div></div>
+
+<script src="js/data.js"></script>
+<script src="js/sound.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/game.js"></script>
+<script src="js/monster.js"></script>
+<script src="js/solo.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
